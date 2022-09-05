@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner_example/barcode_scanner_controller.dart';
+import 'package:mobile_scanner_example/barcode_scanner_returning_image.dart';
 import 'package:mobile_scanner_example/barcode_scanner_window.dart';
 import 'package:mobile_scanner_example/barcode_scanner_without_controller.dart';
 

@@ -22,6 +22,9 @@ public class SwiftMobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHan
     
     // Image to be sent to the texture
     var latestBuffer: CVImageBuffer!
+
+    // Return image buffer with the Barcode event
+    var returnImage: Bool = false
     
 //    var analyzeMode: Int = 0
     var analyzing: Bool = false
@@ -90,7 +93,17 @@ public class SwiftMobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHan
         }
         return Unmanaged<CVPixelBuffer>.passRetained(latestBuffer)
     }
-    
+
+    private func ciImageToJpeg(ciImage: CIImage) -> Data {
+
+        // let ciImage = CIImage(cvPixelBuffer: latestBuffer)
+        let context:CIContext = CIContext.init(options: nil)
+        let cgImage:CGImage = context.createCGImage(ciImage, from: ciImage.extent)!
+        let uiImage:UIImage = UIImage(cgImage: cgImage, scale: 1, orientation: UIImage.Orientation.up)
+
+        return uiImage.jpegData(compressionQuality: 0.8)!;
+    }
+
     // Gets called when a new image is added to the buffer
     public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
 
@@ -122,7 +135,13 @@ public class SwiftMobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHan
                             }
                         }
 
-                        let event: [String: Any?] = ["name": "barcode", "data": barcode.data]
+                        
+                        var event: [String: Any?] = ["name": "barcode", "data": barcode.data]
+                        if (returnImage && latestBuffer != nil) {
+                            let image: CIImage = CIImage(cvPixelBuffer: latestBuffer)
+
+                            event["image"] = FlutterStandardTypedData(bytes: ciImageToJpeg(ciImage: image))
+                        }
                         sink?(event)
                     }
                 }
@@ -213,6 +232,8 @@ public class SwiftMobileScannerPlugin: NSObject, FlutterPlugin, FlutterStreamHan
         captureSession = AVCaptureSession()
         
         let argReader = MapArgumentReader(call.arguments as? [String: Any])
+
+        returnImage = argReader.bool(key: "returnImage") ?? false
         
 //        let ratio: Int = argReader.int(key: "ratio")
         let torch: Bool = argReader.bool(key: "torch") ?? false
